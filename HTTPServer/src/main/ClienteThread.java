@@ -33,14 +33,15 @@ public class ClienteThread extends Thread {
 			reader = new BufferedReader(
 					new InputStreamReader(s.getInputStream()));
 			
+			
 			String msgCliente;
-			while(!(msgCliente=reader.readLine()).equalsIgnoreCase("")){
+			while(!((msgCliente=reader.readLine()).equalsIgnoreCase(""))){
 				cabeceraEntrante.add(msgCliente); //Metemos la cabecera recibida en una lista
 			}
 			
-			for(int i = 0;i<cabeceraEntrante.size();i++){
+			/*for(int i = 0;i<cabeceraEntrante.size();i++){
 				System.out.println(cabeceraEntrante.get(i));
-			}
+			}*/
 			
 			FirstLine = cabeceraEntrante.get(0);
 			String [] peticion=FirstLine.split(" "); //Recuperamos las peticiones de cliente
@@ -56,10 +57,10 @@ public class ClienteThread extends Thread {
 					String webPlano = readFileAsString(rootDirectory + webRequired); //Pasamos el file a String
 					String headerResp = makeHeader(200,webPlano.length()); //Construimos cabecera
 					
-					System.out.println(headerResp + webPlano);
+					//System.out.println(headerResp + webPlano);
 					writer.println(headerResp + webPlano);
 				}else{
-					System.out.println("No existe!");
+					System.out.println("No existe la web ke keria!");
 				}
 				break;
 			case 2: // El metodo es POST
@@ -71,8 +72,22 @@ public class ClienteThread extends Thread {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}finally{
+			try {
+				if(reader!=null){
+					reader.close();
+				}
+				if(writer!=null){
+					writer.close();
+				}
+				if(s!=null){
+					s.close();
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
-
 	}
 	
 	private String makeHeader(int status,int length) {
