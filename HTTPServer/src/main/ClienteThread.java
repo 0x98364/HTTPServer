@@ -50,11 +50,14 @@ public class ClienteThread extends Thread {
 				String webRequired = peticion[1];
 				File web = new File(rootDirectory + webRequired);
 				if(web.exists()){
-					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR---*/
+					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB EXISTE---*/
 					writer = new PrintWriter(s.getOutputStream(),true);
-					String web2 = readFileAsString(rootDirectory + webRequired);
-					System.out.println(web2);
-					writer.println(web2);
+					
+					String webPlano = readFileAsString(rootDirectory + webRequired); //Pasamos el file a String
+					String headerResp = makeHeader(200,webPlano.length()); //Construimos cabecera
+					
+					System.out.println(headerResp + webPlano);
+					writer.println(headerResp + webPlano);
 				}else{
 					System.out.println("No existe!");
 				}
@@ -64,10 +67,6 @@ public class ClienteThread extends Thread {
 			default:
 				break;
 			}
-			 
-			
-			
-			
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -76,6 +75,25 @@ public class ClienteThread extends Thread {
 
 	}
 	
+	private String makeHeader(int status,int length) {
+		String header;
+		
+		switch (status) {
+		case 200:
+			header = "HTTP/1.1 " + status + " OK\n";
+			header += "Server:	HTTPJava SERVER DRKWB\n";
+			header += "Content-Type: text/html\n";
+			header += "Content-Length: " + length + "\n";
+			header += "\n";
+			return header;
+		default:
+			
+			break;
+		}
+		return null;
+		
+	}
+
 	private int getMethod(String peticion ){
 		if(peticion.equalsIgnoreCase("GET")){
 			return 1;
