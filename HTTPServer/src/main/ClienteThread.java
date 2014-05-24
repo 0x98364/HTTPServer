@@ -85,9 +85,15 @@ public class ClienteThread extends Thread {
 		            BufferedInputStream bis = new BufferedInputStream(is);
 		 
 		            int ch;
-		            while ((ch = bis.read()) != -1) out.write(ch);
+		            while ((ch = bis.read()) != -1){
+		            	out.write(ch);
+		            }
 		            out.writeBytes("\n");
 		            out.flush();
+		            
+		            out.close();
+		            is.close();
+		            bis.close();
 				}else if(web.exists() && getMime(path).equalsIgnoreCase("image/jpeg")){
 					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA IMAGEN EXISTE---*/
 					DataOutputStream out = new DataOutputStream(s.getOutputStream());
@@ -102,23 +108,33 @@ public class ClienteThread extends Thread {
 		            while ((ch = bis.read()) != -1) out.write(ch);
 		            out.writeBytes("\n");
 		            out.flush();
+		            
+		            out.close();
+		            is.close();
+		            bis.close();
 				}
 				else if(web.exists() && getMime(path).equalsIgnoreCase("application/pdf")){
 					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI EL PDF EXISTE---*/
 					DataOutputStream out = new DataOutputStream(s.getOutputStream());
-					InputStream is =  new FileInputStream(path);
-		            BufferedInputStream bis = new BufferedInputStream(is);
+					
 		
 		            //Envio de header
 					out.writeBytes(makeHeader(200, 0, getMime(path)));
 					out.flush();
+					
+					InputStream is =  new FileInputStream(path);
+		            BufferedInputStream bis = new BufferedInputStream(is);
 					
 					//Envio de buffer con la imagen
 		            int ch;
 		            while ((ch = bis.read()) != -1) out.write(ch);
 		            out.writeBytes("\n");
 		            out.flush();
-		        }else{
+		            
+		            out.close();
+		            is.close();
+		            bis.close();
+		        }else if(!web.exists()){
 		        	/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB NO EXISTE---*/
 		        	writer = new PrintWriter(s.getOutputStream(),true);
 		        	
@@ -148,6 +164,7 @@ public class ClienteThread extends Thread {
 				if(s!=null){
 					s.close();
 				}
+		        
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -180,14 +197,12 @@ public class ClienteThread extends Thread {
 		case 200:
 				header = "HTTP/1.1 " + status + " OK\n";
 				header += "Server:	HTTPJava SERVER DRKWB\n";
-				header += "Content-Length: " + length + "\n";
 				header += "Content-Type: " + mime + "\n";
 				header += "\n";
 				return header;
 		case 404:
 				header = "HTTP/1.1 " + status + " Not Found\n";
 				header += "Server:	HTTPJava SERVER DRKWB\n";
-				header += "Content-Length: " + length + "\n";
 				header += "Content-Type: " + mime + "\n";
 				header += "\n";
 				return header;
