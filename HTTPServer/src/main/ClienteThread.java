@@ -77,8 +77,8 @@ public class ClienteThread extends Thread {
 				}else if(web.exists() && getMime(path).equalsIgnoreCase("image/png")){
 					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA IMAGEN EXISTE---*/
 					DataOutputStream out = new DataOutputStream(s.getOutputStream());
-		
-					out.writeBytes(makeHeader(200, 0, getMime(path)));
+					
+					out.writeBytes(makeHeader(200, (int) web.length(), getMime(path)));
 					out.flush();
 					
 					InputStream is =  new FileInputStream(path);
@@ -98,7 +98,7 @@ public class ClienteThread extends Thread {
 					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA IMAGEN EXISTE---*/
 					DataOutputStream out = new DataOutputStream(s.getOutputStream());
 		
-					out.writeBytes(makeHeader(200, 0, getMime(path)));
+					out.writeBytes(makeHeader(200, (int) web.length(), getMime(path)));
 					out.flush();
 					
 					InputStream is =  new FileInputStream(path);
@@ -116,10 +116,9 @@ public class ClienteThread extends Thread {
 				else if(web.exists() && getMime(path).equalsIgnoreCase("application/pdf")){
 					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI EL PDF EXISTE---*/
 					DataOutputStream out = new DataOutputStream(s.getOutputStream());
-					
 		
 		            //Envio de header
-					out.writeBytes(makeHeader(200, 0, getMime(path)));
+					out.writeBytes(makeHeader(200, (int) web.length(), getMime(path)));
 					out.flush();
 					
 					InputStream is =  new FileInputStream(path);
@@ -142,6 +141,7 @@ public class ClienteThread extends Thread {
 					String headerResp = makeHeader(404,webPlano.length(),getMime(path));
 	
 					System.out.println(headerResp + webPlano);
+					writer.println(headerResp + webPlano);
 				}
 				break;
 			case 2: // El metodo es POST
@@ -198,12 +198,14 @@ public class ClienteThread extends Thread {
 				header = "HTTP/1.1 " + status + " OK\n";
 				header += "Server:	HTTPJava SERVER DRKWB\n";
 				header += "Content-Type: " + mime + "\n";
+				header += "Content-Length: " + length + "\n";
 				header += "\n";
 				return header;
 		case 404:
 				header = "HTTP/1.1 " + status + " Not Found\n";
 				header += "Server:	HTTPJava SERVER DRKWB\n";
 				header += "Content-Type: " + mime + "\n";
+				header += "Content-Length: " + length + "\n";
 				header += "\n";
 				return header;
 		default:
