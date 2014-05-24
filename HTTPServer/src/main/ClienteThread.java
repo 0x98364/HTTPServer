@@ -1,13 +1,18 @@
 package main;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.lang.*;
 
 public class ClienteThread extends Thread {
 	private Socket s;
@@ -15,6 +20,7 @@ public class ClienteThread extends Thread {
 	private ArrayList<String> cabeceraEntrante;
 	private ArrayList<String> webPage;
 	private String rootDirectory = "public_html/";
+	private String errorDirectory = "errors/";
 	public ClienteThread(Socket s) {
 		this.s=s;
 	}
@@ -39,9 +45,9 @@ public class ClienteThread extends Thread {
 				cabeceraEntrante.add(msgCliente); //Metemos la cabecera recibida en una lista
 			}
 			
-			/*for(int i = 0;i<cabeceraEntrante.size();i++){
+			for(int i = 0;i<cabeceraEntrante.size();i++){
 				System.out.println(cabeceraEntrante.get(i));
-			}*/
+			}
 			
 			FirstLine = cabeceraEntrante.get(0);
 			String [] peticion=FirstLine.split(" "); //Recuperamos las peticiones de cliente
@@ -49,18 +55,77 @@ public class ClienteThread extends Thread {
 			switch (getMethod(peticion[0])) {
 			case 1: //El metodo es GET
 				String webRequired = peticion[1];
-				File web = new File(rootDirectory + webRequired);
-				if(web.exists()){
+				File web; String path;
+				
+				if(webRequired.equalsIgnoreCase("/")){ //Si no se pone web especifica, se busca el index
+					path = rootDirectory + "index.html";
+					web = new File(path);
+				}else{
+					path = rootDirectory + webRequired;
+					web = new File(path);
+				}
+				
+				if(web.exists() && getMime(path).equalsIgnoreCase("text/html")){
 					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB EXISTE---*/
 					writer = new PrintWriter(s.getOutputStream(),true);
 					
-					String webPlano = readFileAsString(rootDirectory + webRequired); //Pasamos el file a String
-					String headerResp = makeHeader(200,webPlano.length()); //Construimos cabecera
+					String webPlano = readFileAsString(path); //Pasamos el file a String
+					String headerResp = makeHeader(200,webPlano.length(),getMime(path)); //Construimos cabecera para web
 					
-					//System.out.println(headerResp + webPlano);
+					System.out.println(headerResp + webPlano);
 					writer.println(headerResp + webPlano);
-				}else{
-					System.out.println("No existe la web ke keria!");
+				}else if(web.exists() && getMime(path).equalsIgnoreCase("image/png")){
+					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA IMAGEN EXISTE---*/
+					DataOutputStream out = new DataOutputStream(s.getOutputStream());
+		
+					out.writeBytes(makeHeader(200, 0, getMime(path)));
+					out.flush();
+					
+					InputStream is =  new FileInputStream(path);
+		            BufferedInputStream bis = new BufferedInputStream(is);
+		 
+		            int ch;
+		            while ((ch = bis.read()) != -1) out.write(ch);
+		            out.writeBytes("\n");
+		            out.flush();
+				}else if(web.exists() && getMime(path).equalsIgnoreCase("image/jpeg")){
+					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA IMAGEN EXISTE---*/
+					DataOutputStream out = new DataOutputStream(s.getOutputStream());
+		
+					out.writeBytes(makeHeader(200, 0, getMime(path)));
+					out.flush();
+					
+					InputStream is =  new FileInputStream(path);
+		            BufferedInputStream bis = new BufferedInputStream(is);
+		 
+		            int ch;
+		            while ((ch = bis.read()) != -1) out.write(ch);
+		            out.writeBytes("\n");
+		            out.flush();
+				}
+				else if(web.exists() && getMime(path).equalsIgnoreCase("application/pdf")){
+					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI EL PDF EXISTE---*/
+					DataOutputStream out = new DataOutputStream(s.getOutputStream());
+					InputStream is =  new FileInputStream(path);
+		            BufferedInputStream bis = new BufferedInputStream(is);
+		
+		            //Envio de header
+					out.writeBytes(makeHeader(200, 0, getMime(path)));
+					out.flush();
+					
+					//Envio de buffer con la imagen
+		            int ch;
+		            while ((ch = bis.read()) != -1) out.write(ch);
+		            out.writeBytes("\n");
+		            out.flush();
+		        }else{
+		        	/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB NO EXISTE---*/
+		        	writer = new PrintWriter(s.getOutputStream(),true);
+		        	
+		        	String webPlano = readFileAsString(errorDirectory + "404.html");
+					String headerResp = makeHeader(404,webPlano.length(),getMime(path));
+	
+					System.out.println(headerResp + webPlano);
 				}
 				break;
 			case 2: // El metodo es POST
@@ -90,17 +155,42 @@ public class ClienteThread extends Thread {
 		}
 	}
 	
-	private String makeHeader(int status,int length) {
+	private String getMime(String path) {
+		
+		String extension = getExtension(path);
+		
+		if(extension.equalsIgnoreCase("html")){
+			return "text/html";
+		}else if(extension.equalsIgnoreCase("jpg")){
+			return "image/jpeg";
+		}else if(extension.equalsIgnoreCase("png")){
+			return "image/png";
+		}else if(extension.equalsIgnoreCase("pdf")){
+			return "application/pdf";
+		}else if(extension.equalsIgnoreCase("xml")){
+			return "application/xml";
+		}
+		return null;
+	}
+
+	private String makeHeader(int status,int length,String mime) {
 		String header;
 		
 		switch (status) {
 		case 200:
-			header = "HTTP/1.1 " + status + " OK\n";
-			header += "Server:	HTTPJava SERVER DRKWB\n";
-			header += "Content-Type: text/html\n";
-			header += "Content-Length: " + length + "\n";
-			header += "\n";
-			return header;
+				header = "HTTP/1.1 " + status + " OK\n";
+				header += "Server:	HTTPJava SERVER DRKWB\n";
+				header += "Content-Length: " + length + "\n";
+				header += "Content-Type: " + mime + "\n";
+				header += "\n";
+				return header;
+		case 404:
+				header = "HTTP/1.1 " + status + " Not Found\n";
+				header += "Server:	HTTPJava SERVER DRKWB\n";
+				header += "Content-Length: " + length + "\n";
+				header += "Content-Type: " + mime + "\n";
+				header += "\n";
+				return header;
 		default:
 			
 			break;
@@ -132,6 +222,14 @@ public class ClienteThread extends Thread {
         return fileData.toString();
     }
 	
+	 public String getExtension(String filename) {
+         int index = filename.lastIndexOf('.');
+         if (index == -1) {
+               return "";
+         } else {
+               return filename.substring(index + 1);
+         }
+}
 	
 	
 }
