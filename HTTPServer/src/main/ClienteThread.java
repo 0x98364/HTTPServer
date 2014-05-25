@@ -21,6 +21,8 @@ public class ClienteThread extends Thread {
 	private ArrayList<String> webPage;
 	private String rootDirectory = "public_html/";
 	private String errorDirectory = "errors/";
+	private String[] methods = {"HEAD","GET","POST","PUT","DELETE","TRACE","OPTIONS","CONNECT"};
+	
 	public ClienteThread(Socket s) {
 		this.s=s;
 	}
@@ -48,106 +50,79 @@ public class ClienteThread extends Thread {
 			for(int i = 0;i<cabeceraEntrante.size();i++){
 				System.out.println(cabeceraEntrante.get(i));
 			}
-			
-			FirstLine = cabeceraEntrante.get(0);
-			String [] peticion=FirstLine.split(" "); //Recuperamos las peticiones de cliente
-			
-			switch (getMethod(peticion[0])) {
-			case 1: //El metodo es GET
-				String webRequired = peticion[1];
-				File web; String path;
+
+			//Comprobamos que la cabecera esta bien formada (CODE 400). Si lo está, respondemos la peticion
+			if(verifyHeader(cabeceraEntrante)){
 				
-				if(webRequired.equalsIgnoreCase("/")){ //Si no se pone web especifica, se busca el index
-					path = rootDirectory + "index.html";
-					web = new File(path);
-				}else{
-					path = rootDirectory + webRequired;
-					web = new File(path);
-				}
+				FirstLine = cabeceraEntrante.get(0);
+				String [] peticion=FirstLine.split(" "); //Recuperamos las peticiones de cliente
 				
-				if(web.exists() && getMime(path).equalsIgnoreCase("text/html")){
-					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB EXISTE---*/
-					writer = new PrintWriter(s.getOutputStream(),true);
+				switch (getMethod(peticion[0])) {
+				case 1: //El metodo es GET
+					String webRequired = peticion[1];
+					File web; String path;
 					
-					String webPlano = readFileAsString(path); //Pasamos el file a String
-					String headerResp = makeHeader(200,webPlano.length(),getMime(path)); //Construimos cabecera para web
+					if(webRequired.equalsIgnoreCase("/")){ //Si no se pone web especifica, se busca el index
+						path = rootDirectory + "index.html";
+						web = new File(path);
+					}else{
+						path = rootDirectory + webRequired;
+						web = new File(path);
+					}
 					
-					System.out.println(headerResp + webPlano);
-					writer.println(headerResp + webPlano);
-				}else if(web.exists() && getMime(path).equalsIgnoreCase("image/png")){
-					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA IMAGEN EXISTE---*/
-					DataOutputStream out = new DataOutputStream(s.getOutputStream());
-					
-					out.writeBytes(makeHeader(200, (int) web.length(), getMime(path)));
-					out.flush();
-					
-					InputStream is =  new FileInputStream(path);
-		            BufferedInputStream bis = new BufferedInputStream(is);
-		 
-		            int ch;
-		            while ((ch = bis.read()) != -1){
-		            	out.write(ch);
-		            }
-		            out.writeBytes("\n");
-		            out.flush();
-		            
-		            out.close();
-		            is.close();
-		            bis.close();
-				}else if(web.exists() && getMime(path).equalsIgnoreCase("image/jpeg")){
-					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA IMAGEN EXISTE---*/
-					DataOutputStream out = new DataOutputStream(s.getOutputStream());
+					if(web.exists() && getMime(path).equalsIgnoreCase("text/html")){
+						/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB EXISTE---*/
+						writer = new PrintWriter(s.getOutputStream(),true);
+						
+						String webPlano = readFileAsString(path); //Pasamos el file a String
+						String headerResp = makeHeader(200,webPlano.length(),getMime(path)); //Construimos cabecera para web
+						
+						System.out.println(headerResp + webPlano);
+						writer.println(headerResp + webPlano);
+					}else if(web.exists() && (getMime(path).equalsIgnoreCase("image/png") || getMime(path).equalsIgnoreCase("image/jpeg") || getMime(path).equalsIgnoreCase("application/pdf"))){
+						/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA IMAGEN EXISTE---*/
+						DataOutputStream out = new DataOutputStream(s.getOutputStream());
+						
+						out.writeBytes(makeHeader(200, (int) web.length(), getMime(path)));
+						out.flush();
+						
+						InputStream is =  new FileInputStream(path);
+			            BufferedInputStream bis = new BufferedInputStream(is);
+			 
+			            int ch;
+			            while ((ch = bis.read()) != -1){
+			            	out.write(ch);
+			            }
+			            out.writeBytes("\n");
+			            out.flush();
+			            
+			            out.close();
+			            is.close();
+			            bis.close();
+			        }else if(!web.exists()){
+			        	/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB NO EXISTE---*/
+			        	writer = new PrintWriter(s.getOutputStream(),true);
+			        	
+			        	String webPlano = readFileAsString(errorDirectory + "404.html");
+						String headerResp = makeHeader(404,webPlano.length(),getMime(path));
 		
-					out.writeBytes(makeHeader(200, (int) web.length(), getMime(path)));
-					out.flush();
-					
-					InputStream is =  new FileInputStream(path);
-		            BufferedInputStream bis = new BufferedInputStream(is);
-		 
-		            int ch;
-		            while ((ch = bis.read()) != -1) out.write(ch);
-		            out.writeBytes("\n");
-		            out.flush();
-		            
-		            out.close();
-		            is.close();
-		            bis.close();
+						System.out.println(headerResp + webPlano);
+						writer.println(headerResp + webPlano);
+					}
+					break;
+				case 2: // El metodo es POST
+					break;
+				default:
+					break;
 				}
-				else if(web.exists() && getMime(path).equalsIgnoreCase("application/pdf")){
-					/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI EL PDF EXISTE---*/
-					DataOutputStream out = new DataOutputStream(s.getOutputStream());
-		
-		            //Envio de header
-					out.writeBytes(makeHeader(200, (int) web.length(), getMime(path)));
-					out.flush();
-					
-					InputStream is =  new FileInputStream(path);
-		            BufferedInputStream bis = new BufferedInputStream(is);
-					
-					//Envio de buffer con la imagen
-		            int ch;
-		            while ((ch = bis.read()) != -1) out.write(ch);
-		            out.writeBytes("\n");
-		            out.flush();
-		            
-		            out.close();
-		            is.close();
-		            bis.close();
-		        }else if(!web.exists()){
-		        	/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB NO EXISTE---*/
-		        	writer = new PrintWriter(s.getOutputStream(),true);
-		        	
-		        	String webPlano = readFileAsString(errorDirectory + "404.html");
-					String headerResp = makeHeader(404,webPlano.length(),getMime(path));
-	
-					System.out.println(headerResp + webPlano);
-					writer.println(headerResp + webPlano);
-				}
-				break;
-			case 2: // El metodo es POST
-				break;
-			default:
-				break;
+			}else{
+				writer = new PrintWriter(s.getOutputStream(),true);
+	        	
+	        	String webPlano = readFileAsString(errorDirectory + "400.html");
+				String headerResp = makeHeader(400,webPlano.length(),"text/html");
+
+				System.out.println(headerResp + webPlano);
+				writer.println(headerResp + webPlano);
 			}
 			
 		} catch (IOException e) {
@@ -172,6 +147,18 @@ public class ClienteThread extends Thread {
 		}
 	}
 	
+	private boolean verifyHeader(ArrayList<String> cabecera) {
+		String FirstLine = cabeceraEntrante.get(0);
+		String [] peticion=FirstLine.split(" ");
+		
+		for(int i = 0;i<methods.length;i++){
+			if(peticion[0].equalsIgnoreCase(methods[i])){
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private String getMime(String path) {
 		
 		String extension = getExtension(path);
@@ -203,6 +190,13 @@ public class ClienteThread extends Thread {
 				return header;
 		case 404:
 				header = "HTTP/1.1 " + status + " Not Found\n";
+				header += "Server:	HTTPJava SERVER DRKWB\n";
+				header += "Content-Type: " + mime + "\n";
+				header += "Content-Length: " + length + "\n";
+				header += "\n";
+				return header;
+		case 400:
+				header = "HTTP/1.1 " + status + "  Bad Request\n";
 				header += "Server:	HTTPJava SERVER DRKWB\n";
 				header += "Content-Type: " + mime + "\n";
 				header += "Content-Length: " + length + "\n";
