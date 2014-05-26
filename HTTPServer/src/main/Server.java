@@ -22,7 +22,7 @@ public class Server {
 		/*---REGISTRAR PUERTO DE ESCUCHA---*/
 		try {
 			System.err.println("Registrando puerto " + port + ".....");
-			srv = new ServerSocket(port);
+			srv = new ServerSocket(port,stackSize);
 			System.err.println("Puerto registrado " + port);
 			
 			/*---ADMINISTRAR CONEXIONES ENTRANTES--*/

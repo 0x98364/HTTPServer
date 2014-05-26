@@ -18,10 +18,10 @@ public class ClienteThread extends Thread {
 	private Socket s;
 	private String protocol;
 	private ArrayList<String> cabeceraEntrante;
-	private ArrayList<String> webPage;
 	private String rootDirectory = "public_html/";
 	private String errorDirectory = "errors/";
 	private String[] methods = {"HEAD","GET","POST","PUT","DELETE","TRACE","OPTIONS","CONNECT"};
+	//private ServerLog log;
 	
 	public ClienteThread(Socket s) {
 		this.s=s;
@@ -70,7 +70,7 @@ public class ClienteThread extends Thread {
 						web = new File(path);
 					}
 					
-					if(web.exists() && getMime(path).equalsIgnoreCase("text/html")){
+					if(web.exists() && (getMime(path).equalsIgnoreCase("text/html") || getMime(path).equalsIgnoreCase("text/css"))){
 						/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB EXISTE---*/
 						writer = new PrintWriter(s.getOutputStream(),true);
 						
@@ -79,7 +79,9 @@ public class ClienteThread extends Thread {
 						
 						System.out.println(headerResp + webPlano);
 						writer.println(headerResp + webPlano);
-					}else if(web.exists() && (getMime(path).equalsIgnoreCase("image/png") || getMime(path).equalsIgnoreCase("image/jpeg") || getMime(path).equalsIgnoreCase("application/pdf"))){
+					}else if(web.exists() && (getMime(path).equalsIgnoreCase("image/png") || getMime(path).equalsIgnoreCase("image/jpeg") || getMime(path).equalsIgnoreCase("application/pdf") || getMime(path).equalsIgnoreCase("application/xml") 
+							|| getMime(path).equalsIgnoreCase("text/plain") || getMime(path).equalsIgnoreCase("image/bmp") || getMime(path).equalsIgnoreCase("image/gif") || getMime(path).equalsIgnoreCase("application/zip")
+							|| getMime(path).equalsIgnoreCase("application/x-compressed") || getMime(path).equalsIgnoreCase("application/octet-stream") || getMime(path).equalsIgnoreCase("audio/mpeg3"))){
 						/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA IMAGEN EXISTE---*/
 						DataOutputStream out = new DataOutputStream(s.getOutputStream());
 						
@@ -104,7 +106,7 @@ public class ClienteThread extends Thread {
 			        	writer = new PrintWriter(s.getOutputStream(),true);
 			        	
 			        	String webPlano = readFileAsString(errorDirectory + "404.html");
-						String headerResp = makeHeader(404,webPlano.length(),getMime(path));
+						String headerResp = makeHeader(404,webPlano.length(),"text/html");
 		
 						System.out.println(headerResp + webPlano);
 						writer.println(headerResp + webPlano);
@@ -173,8 +175,26 @@ public class ClienteThread extends Thread {
 			return "application/pdf";
 		}else if(extension.equalsIgnoreCase("xml")){
 			return "application/xml";
+		}else if(extension.equalsIgnoreCase("c") || extension.equalsIgnoreCase("cc") || extension.equalsIgnoreCase("com") || extension.equalsIgnoreCase("conf") || extension.equalsIgnoreCase("def") || extension.equalsIgnoreCase("h") 
+				|| extension.equalsIgnoreCase("java") || extension.equalsIgnoreCase("log") || extension.equalsIgnoreCase("pl") || extension.equalsIgnoreCase("txt")){
+			return "text/plain";
+		}else if(extension.equalsIgnoreCase("bmp")){
+			return "image/bmp";
+		}else if(extension.equalsIgnoreCase("gif")){
+			return "image/gif";
+		}else if(extension.equalsIgnoreCase("zip")){
+			return "application/zip";
+		}else if(extension.equalsIgnoreCase("tgz") || extension.equalsIgnoreCase("gz")){
+			return "application/x-compressed";
+		}else if(extension.equalsIgnoreCase("exe")){
+			return "application/octet-stream";
+		}else if(extension.equalsIgnoreCase("mp3")){
+			return "audio/mpeg3";
+		}else if(extension.equalsIgnoreCase("css")){
+			return "text/css";
 		}
-		return null;
+		
+		return "no-mime";
 	}
 
 	private String makeHeader(int status,int length,String mime) {

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<libros>
+    <libro>
+        <titulo>Fuente Ovejuna</titulo>
+        <autor>Lope de Vega</autor>
+        <isbn>84-9815-002-7</isbn>
+        <precio>15</precio>
+    </libro>
+    <libro>
+        <titulo>La Celestina</titulo>
+        <autor>Fernando de Rojas</autor>
+        <isbn>84-96390-96-9</isbn>
+        <precio>32</precio>
+    </libro>
+    <libro>
+        <titulo>Don Juan Tenorio</titulo>
+        <autor>Jose Zorilla</autor>
+        <isbn>84-96390-97-7</isbn>
+        <precio>30</precio>
+    </libro>
+</libros>
