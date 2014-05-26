@@ -16,12 +16,16 @@ import java.lang.*;
 
 public class ClienteThread extends Thread {
 	private Socket s;
-	private String protocol;
 	private ArrayList<String> cabeceraEntrante;
 	private String rootDirectory = "public_html/";
 	private String errorDirectory = "errors/";
+	private String logsDirectory = "errors/";
 	private String[] methods = {"HEAD","GET","POST","PUT","DELETE","TRACE","OPTIONS","CONNECT"};
-	//private ServerLog log;
+	private ServerLog log;
+	
+	/*---PREPARAR PROTECCION---*/
+	private AuthBasic protect = new AuthBasic();
+
 	
 	public ClienteThread(Socket s) {
 		this.s=s;
@@ -33,6 +37,9 @@ public class ClienteThread extends Thread {
 		BufferedReader reader = null;
 		PrintWriter writer = null;
 		cabeceraEntrante = new ArrayList<String>();
+
+		/*---PREPARAR LOG---*/
+		log = new ServerLog(logsDirectory);
 		
 		String FirstLine;
 		try {
@@ -43,10 +50,16 @@ public class ClienteThread extends Thread {
 			
 			
 			String msgCliente;
-			while(!((msgCliente=reader.readLine()).equalsIgnoreCase(""))){
-				cabeceraEntrante.add(msgCliente); //Metemos la cabecera recibida en una lista
-			}
 			
+			//Se crea el try para controlar los errores de cabeceras null
+			try{
+				while(!((msgCliente=reader.readLine()).equalsIgnoreCase(""))){
+					cabeceraEntrante.add(msgCliente); //Metemos la cabecera recibida en un ArrayList
+				}
+			}catch(NullPointerException e){
+				System.err.println("Se ha recibido una cabecera vacia desde: " + s.getRemoteSocketAddress());
+			}
+
 			for(int i = 0;i<cabeceraEntrante.size();i++){
 				System.out.println(cabeceraEntrante.get(i));
 			}
@@ -60,56 +73,81 @@ public class ClienteThread extends Thread {
 				switch (getMethod(peticion[0])) {
 				case 1: //El metodo es GET
 					String webRequired = peticion[1];
-					File web; String path;
+					File web,carp; 
+					String path;
 					
-					if(webRequired.equalsIgnoreCase("/")){ //Si no se pone web especifica, se busca el index
-						path = rootDirectory + "index.html";
+					carp = new File(rootDirectory + webRequired); //Creamos este file para comprobar si es directorio
+					
+					if(carp.isDirectory()){ //Si se pone una carpeta, se busca el index de esa carpeta
+						path = rootDirectory + webRequired + "index.html";
 						web = new File(path);
 					}else{
 						path = rootDirectory + webRequired;
 						web = new File(path);
 					}
 					
-					if(web.exists() && (getMime(path).equalsIgnoreCase("text/html") || getMime(path).equalsIgnoreCase("text/css"))){
-						/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB EXISTE---*/
+					/*---PROTECCION BASIC DE DIRECTORIOS--*/
+					if((protect.isProtected(carp) || protect.isProtected(new File(web.getParent()))) 
+							&& !envioAuth(cabeceraEntrante)){
 						writer = new PrintWriter(s.getOutputStream(),true);
 						
-						String webPlano = readFileAsString(path); //Pasamos el file a String
-						String headerResp = makeHeader(200,webPlano.length(),getMime(path)); //Construimos cabecera para web
+						String webPlano = readFileAsString(errorDirectory + "401.html");
+						String headerResp = makeHeader(401,webPlano.length(),"text/html"); //Construimos cabecera para web
 						
 						System.out.println(headerResp + webPlano);
 						writer.println(headerResp + webPlano);
-					}else if(web.exists() && (getMime(path).equalsIgnoreCase("image/png") || getMime(path).equalsIgnoreCase("image/jpeg") || getMime(path).equalsIgnoreCase("application/pdf") || getMime(path).equalsIgnoreCase("application/xml") 
-							|| getMime(path).equalsIgnoreCase("text/plain") || getMime(path).equalsIgnoreCase("image/bmp") || getMime(path).equalsIgnoreCase("image/gif") || getMime(path).equalsIgnoreCase("application/zip")
-							|| getMime(path).equalsIgnoreCase("application/x-compressed") || getMime(path).equalsIgnoreCase("application/octet-stream") || getMime(path).equalsIgnoreCase("audio/mpeg3"))){
-						/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA IMAGEN EXISTE---*/
-						DataOutputStream out = new DataOutputStream(s.getOutputStream());
 						
-						out.writeBytes(makeHeader(200, (int) web.length(), getMime(path)));
-						out.flush();
+					}else if((protect.isProtected(carp) || protect.isProtected(new File(web.getParent())))
+							&& envioAuth(cabeceraEntrante)){
+						//Comprobamos credenciales
+						if(protect.comprobarCredenciales(cabeceraEntrante)){
+							
+						}
 						
-						InputStream is =  new FileInputStream(path);
-			            BufferedInputStream bis = new BufferedInputStream(is);
-			 
-			            int ch;
-			            while ((ch = bis.read()) != -1){
-			            	out.write(ch);
-			            }
-			            out.writeBytes("\n");
-			            out.flush();
-			            
-			            out.close();
-			            is.close();
-			            bis.close();
-			        }else if(!web.exists()){
-			        	/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB NO EXISTE---*/
-			        	writer = new PrintWriter(s.getOutputStream(),true);
-			        	
-			        	String webPlano = readFileAsString(errorDirectory + "404.html");
-						String headerResp = makeHeader(404,webPlano.length(),"text/html");
-		
-						System.out.println(headerResp + webPlano);
-						writer.println(headerResp + webPlano);
+					}else{ //Si la carpeta no esta protegida la servimos
+						
+						if(web.exists() && (getMime(path).equalsIgnoreCase("text/html") || getMime(path).equalsIgnoreCase("text/css"))){
+							/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB EXISTE---*/
+							writer = new PrintWriter(s.getOutputStream(),true);
+							
+							String webPlano = readFileAsString(path); //Pasamos el file a String
+							String headerResp = makeHeader(200,webPlano.length(),getMime(path)); //Construimos cabecera para web
+							
+							System.out.println(headerResp + webPlano);
+							writer.println(headerResp + webPlano);
+						}else if(web.exists() && (getMime(path).equalsIgnoreCase("image/png") || getMime(path).equalsIgnoreCase("image/jpeg") || getMime(path).equalsIgnoreCase("application/pdf") || getMime(path).equalsIgnoreCase("application/xml") 
+								|| getMime(path).equalsIgnoreCase("text/plain") || getMime(path).equalsIgnoreCase("image/bmp") || getMime(path).equalsIgnoreCase("image/gif") || getMime(path).equalsIgnoreCase("application/zip")
+								|| getMime(path).equalsIgnoreCase("application/x-compressed") || getMime(path).equalsIgnoreCase("application/octet-stream") || getMime(path).equalsIgnoreCase("audio/mpeg3"))){
+							
+							/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA IMAGEN EXISTE---*/
+							DataOutputStream out = new DataOutputStream(s.getOutputStream());
+							
+							out.writeBytes(makeHeader(200, (int) web.length(), getMime(path)));
+							out.flush();
+							
+							InputStream is =  new FileInputStream(path);
+				            BufferedInputStream bis = new BufferedInputStream(is);
+				 
+				            int ch;
+				            while ((ch = bis.read()) != -1){
+				            	out.write(ch);
+				            }
+				            out.writeBytes("\n");
+				            out.flush();
+				            
+				            out.close();
+				            is.close();
+				            bis.close();
+				        }else if(!web.exists()){
+				        	/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB NO EXISTE---*/
+				        	writer = new PrintWriter(s.getOutputStream(),true);
+				        	
+				        	String webPlano = readFileAsString(errorDirectory + "404.html");
+							String headerResp = makeHeader(404,webPlano.length(),"text/html");
+			
+							System.out.println(headerResp + webPlano);
+							writer.println(headerResp + webPlano);
+						}
 					}
 					break;
 				case 2: // El metodo es POST
@@ -123,13 +161,24 @@ public class ClienteThread extends Thread {
 	        	String webPlano = readFileAsString(errorDirectory + "400.html");
 				String headerResp = makeHeader(400,webPlano.length(),"text/html");
 
-				System.out.println(headerResp + webPlano);
 				writer.println(headerResp + webPlano);
 			}
 			
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//En caso de error al gestionar la peticion, se envia un codigo HTTP 500
+			System.err.println("Se ha recibido una cabecera vacia desde: " + s.getRemoteSocketAddress());
+			try{
+				writer = new PrintWriter(s.getOutputStream(),true);
+				
+	        	String webPlano = readFileAsString(errorDirectory + "500.html");
+				String headerResp = makeHeader(500,webPlano.length(),"text/html");
+	
+				writer.println(headerResp + webPlano);
+				e.printStackTrace();
+			}catch(IOException ex){
+				System.err.println("No se le pudo comunicar el error al cliente");
+			}
+			
 		}finally{
 			try {
 				if(reader!=null){
@@ -141,26 +190,32 @@ public class ClienteThread extends Thread {
 				if(s!=null){
 					s.close();
 				}
-		        
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				System.err.println("Error al cerrar sockets");
 			}
 		}
-	}
-	
-	private boolean verifyHeader(ArrayList<String> cabecera) {
-		String FirstLine = cabeceraEntrante.get(0);
-		String [] peticion=FirstLine.split(" ");
-		
-		for(int i = 0;i<methods.length;i++){
-			if(peticion[0].equalsIgnoreCase(methods[i])){
-				return true;
-			}
-		}
-		return false;
 	}
 
+	//Metodo encargado de comprobar que la cabecera recibida esta bien formada (BETA)
+	private boolean verifyHeader(ArrayList<String> cabecera) {
+		try{
+			String FirstLine = cabeceraEntrante.get(0);
+			String [] peticion=FirstLine.split(" ");
+			
+			for(int i = 0;i<methods.length;i++){
+				if(peticion[0].equalsIgnoreCase(methods[i])){
+					return true;
+				}
+			}
+			return false;
+		}catch(IndexOutOfBoundsException e){
+			System.err.println("Imposible verificar cabecera, probablemente vacía");
+		}
+		return false;
+		
+	}
+	
+	//Metodo para obtener el tipo mime del archivo solicitado
 	private String getMime(String path) {
 		
 		String extension = getExtension(path);
@@ -197,6 +252,7 @@ public class ClienteThread extends Thread {
 		return "no-mime";
 	}
 
+	//Metodo encargado de contruir Strings de cabeceras bien formadas
 	private String makeHeader(int status,int length,String mime) {
 		String header;
 		
@@ -222,6 +278,21 @@ public class ClienteThread extends Thread {
 				header += "Content-Length: " + length + "\n";
 				header += "\n";
 				return header;
+		case 401:
+				header = "HTTP/1.1 " + status + "  Unauthorized\n";
+				header += "Server:	HTTPJava SERVER DRKWB\n";
+				header += "WWW-Authenticate: Basic realm=\"" + protect.getAuthMessage() + "\"\n";
+				header += "Content-Type: " + mime + "\n";
+				header += "Content-Length: " + length + "\n";
+				header += "\n";
+				return header;
+		case 500:
+				header = "HTTP/1.1 " + status + " Internal Server Error\n";
+				header += "Server:	HTTPJava SERVER DRKWB\n";
+				header += "Content-Type: " + mime + "\n";
+				header += "Content-Length: " + length + "\n";
+				header += "\n";
+				return header;
 		default:
 			
 			break;
@@ -229,7 +300,8 @@ public class ClienteThread extends Thread {
 		return null;
 		
 	}
-
+	
+	//Metodo encargado de obtener el metodo enviado por el cliente
 	private int getMethod(String peticion ){
 		if(peticion.equalsIgnoreCase("GET")){
 			return 1;
@@ -239,6 +311,7 @@ public class ClienteThread extends Thread {
 		return 0;
 	}
 	
+	//Metodo encargado de transformar un File a String para poder ser enviado
 	private String readFileAsString(String filePath) throws IOException {
         StringBuffer fileData = new StringBuffer();
         BufferedReader reader = new BufferedReader(
@@ -253,6 +326,7 @@ public class ClienteThread extends Thread {
         return fileData.toString();
     }
 	
+	//Metodo encargado de obtener la extension del archivo a servir
 	 public String getExtension(String filename) {
          int index = filename.lastIndexOf('.');
          if (index == -1) {
@@ -260,7 +334,17 @@ public class ClienteThread extends Thread {
          } else {
                return filename.substring(index + 1);
          }
-}
+	 }
+	 
+	 //Metodo encargado de comprobar si la cabecera entrante contiene autenticacion basic
+	 private boolean envioAuth(ArrayList<String> cabecera) {
+			for(int i = 0;i<cabecera.size();i++){
+				if(cabecera.get(i).startsWith("Authorization: Basic")){
+					return true; //Si contiene esa linea de cabecera, el cliente manda auth
+				}
+			}
+			return false;
+		}
 	
 	
 }

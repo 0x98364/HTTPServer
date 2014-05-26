@@ -8,7 +8,7 @@ import java.net.Socket;
 
 public class Server {
 	private int port=-1;
-	public static int STANDART_PORT=80;
+	public static int STANDART_PORT=8040;
 	private int stackSize;
 	private boolean stop;
 	
