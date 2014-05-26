@@ -1,7 +1,12 @@
 package main;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.util.ArrayList;
+
+import crypto.Base64;
 
 /*---------------------------------------------------------
  * CLASE ENCARGADA DE PROTEGER DIRECTORIOS
@@ -21,8 +26,6 @@ public class AuthBasic {
 		this.authMessage = authMessage;
 	}
 
-
-
 	public boolean isProtected(File carp) {
 		String [] dir = carp.list();
 		
@@ -39,24 +42,41 @@ public class AuthBasic {
 	}
 
 
-	public boolean comprobarCredenciales(ArrayList<String> cabecera) {
-		int linea = 0;
+	public boolean comprobarCredenciales(ArrayList<String> cabecera, File carp) {
+		int linean = 0;
 		for(int i = 0;i<cabecera.size();i++){
 			if(cabecera.get(i).startsWith("Authorization: Basic")){
-				linea = i;
+				linean = i;
 			}
 		}
-		System.err.println(cabecera.get(linea));
-		
-		String[] line = cabecera.get(linea).split(" ");
-		
+		String[] line = cabecera.get(linean).split(" ");
 		String base64 = line[2];
+		String base64plain = new String(Base64.decode(base64));
+		String credenciales = null;
 		
-		System.err.println(base64);
-
+		if(carp.isDirectory()){
+			File config = new File(carp.getAbsolutePath() + "/" + "conf.drkwb");
+			
+			try{
+				FileReader fr = new FileReader(config);
+				BufferedReader bf = new BufferedReader(fr);
+				
+				String linea;
+				while((linea = bf.readLine())!=null){
+					credenciales = linea;
+				}
+				bf.close();
+				
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+			
+			if(base64plain.equals(credenciales)){
+				return true;
+			}
+		}
 		return false;
 	}
-	
-	
+
 
 }

@@ -100,8 +100,14 @@ public class ClienteThread extends Thread {
 					}else if((protect.isProtected(carp) || protect.isProtected(new File(web.getParent())))
 							&& envioAuth(cabeceraEntrante)){
 						//Comprobamos credenciales
-						if(protect.comprobarCredenciales(cabeceraEntrante)){
+						if(protect.comprobarCredenciales(cabeceraEntrante,new File(web.getParent()))){
+							writer = new PrintWriter(s.getOutputStream(),true);
 							
+							String webPlano = readFileAsString(path); //Pasamos el file a String
+							String headerResp = makeHeader(200,webPlano.length(),getMime(path)); //Construimos cabecera para web
+							
+							System.out.println(headerResp + webPlano);
+							writer.println(headerResp + webPlano);
 						}
 						
 					}else{ //Si la carpeta no esta protegida la servimos
