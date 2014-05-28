@@ -15,7 +15,7 @@ import crypto.Base64;
 
 public class AuthBasic {
 	private String user,pass;
-	private String authMessage = "Autorizacion requerida";
+	private String authMessage = "Autorizacion GUAY";
 
 	public String getAuthMessage() {
 		return authMessage;
@@ -51,29 +51,29 @@ public class AuthBasic {
 		}
 		String[] line = cabecera.get(linean).split(" ");
 		String base64 = line[2];
-		String base64plain = new String(Base64.decode(base64));
+		String base64plain = new String(Base64.decode(base64)); //Desencriptamos la pass recibida
 		String credenciales = null;
 		
-		if(carp.isDirectory()){
-			File config = new File(carp.getAbsolutePath() + "/" + "conf.drkwb");
+		System.out.println(carp.getParent());
+		
+		File config = new File(carp.getParent() + "/" + "conf.drkwb");
 			
-			try{
-				FileReader fr = new FileReader(config);
-				BufferedReader bf = new BufferedReader(fr);
-				
-				String linea;
-				while((linea = bf.readLine())!=null){
-					credenciales = linea;
-				}
-				bf.close();
-				
-			}catch(Exception e){
-				e.printStackTrace();
-			}
+		try{
+			FileReader fr = new FileReader(config);
+			BufferedReader bf = new BufferedReader(fr);
 			
-			if(base64plain.equals(credenciales)){
-				return true;
+			String linea;
+			while((linea = bf.readLine())!=null){
+				credenciales = linea;
 			}
+			bf.close();
+			
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		
+		if(base64plain.equals(credenciales)){
+			return true;
 		}
 		return false;
 	}

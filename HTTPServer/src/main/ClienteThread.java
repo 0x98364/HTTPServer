@@ -77,16 +77,20 @@ public class ClienteThread extends Thread {
 					String path;
 					
 					carp = new File(rootDirectory + webRequired); //Creamos este file para comprobar si es directorio
-					
-					if(carp.isDirectory()){ //Si se pone una carpeta, se busca el index de esa carpeta
+
+					if(carp.isDirectory() && !(webRequired.lastIndexOf("/")==webRequired.length())){ //Si no hay "/" al final la añadimos
+						path = rootDirectory + webRequired + "/" + "index.html";
+						web = new File(path);
+					}else if(carp.isDirectory()){
 						path = rootDirectory + webRequired + "index.html";
 						web = new File(path);
-					}else{
+					}
+					else{
 						path = rootDirectory + webRequired;
 						web = new File(path);
 					}
 					
-					/*---PROTECCION BASIC DE DIRECTORIOS--*/
+					/*---PROTECCION BASIC DE DIRECTORIOS---*/
 					if((protect.isProtected(carp) || protect.isProtected(new File(web.getParent()))) 
 							&& !envioAuth(cabeceraEntrante)){
 						writer = new PrintWriter(s.getOutputStream(),true);
@@ -100,7 +104,7 @@ public class ClienteThread extends Thread {
 					}else if((protect.isProtected(carp) || protect.isProtected(new File(web.getParent())))
 							&& envioAuth(cabeceraEntrante)){
 						//Comprobamos credenciales
-						if(protect.comprobarCredenciales(cabeceraEntrante,new File(web.getParent()))){
+						if(protect.comprobarCredenciales(cabeceraEntrante,web)){
 							writer = new PrintWriter(s.getOutputStream(),true);
 							
 							String webPlano = readFileAsString(path); //Pasamos el file a String
@@ -108,6 +112,16 @@ public class ClienteThread extends Thread {
 							
 							System.out.println(headerResp + webPlano);
 							writer.println(headerResp + webPlano);
+						}else{ //Si las credenciales son erroneas, mandamos header 401 de nuevo
+							writer = new PrintWriter(s.getOutputStream(),true);
+							
+							String webPlano = readFileAsString(errorDirectory + "401.html"); //Pasamos el file a String
+							String headerResp = makeHeader(401,webPlano.length(),"text/html"); //Construimos cabecera para web
+							
+							System.out.println(headerResp + webPlano);
+							writer.println(headerResp + webPlano);
+							
+							System.err.println("Autenticacion erronea a " + web.getPath() + " desde " + s.getInetAddress());
 						}
 						
 					}else{ //Si la carpeta no esta protegida la servimos
