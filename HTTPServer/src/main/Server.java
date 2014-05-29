@@ -28,11 +28,12 @@ public class Server {
 			/*---ADMINISTRAR CONEXIONES ENTRANTES--*/
 			try {
 				while(!stop){
-					System.out.println("Esperando conexion entrante...");
+					System.out.println("Esperando conexiones entrantes...");
 					Socket s = srv.accept();
 					System.out.println("Conexion entrande desde " + s.getInetAddress());
 					
 					/*---ATENDER CONEXION ENTRANTE EN OTRO HILO---*/
+					
 					ClienteThread st = new ClienteThread(s);
 					st.start();
 				}

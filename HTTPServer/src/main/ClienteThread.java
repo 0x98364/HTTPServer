@@ -92,7 +92,7 @@ public class ClienteThread extends Thread {
 					
 					/*---PROTECCION BASIC DE DIRECTORIOS---*/
 					if((protect.isProtected(carp) || protect.isProtected(new File(web.getParent()))) 
-							&& !envioAuth(cabeceraEntrante)){
+							&& !envioAuth(cabeceraEntrante) && !(getExtension(path).equalsIgnoreCase("drkwb"))){
 						writer = new PrintWriter(s.getOutputStream(),true);
 						
 						String webPlano = readFileAsString(errorDirectory + "401.html");
@@ -102,7 +102,7 @@ public class ClienteThread extends Thread {
 						writer.println(headerResp + webPlano);
 						
 					}else if((protect.isProtected(carp) || protect.isProtected(new File(web.getParent())))
-							&& envioAuth(cabeceraEntrante)){
+							&& envioAuth(cabeceraEntrante) && !(getExtension(path).equalsIgnoreCase("drkwb"))){
 						//Comprobamos credenciales
 						if(protect.comprobarCredenciales(cabeceraEntrante,web)){
 							writer = new PrintWriter(s.getOutputStream(),true);
@@ -126,7 +126,16 @@ public class ClienteThread extends Thread {
 						
 					}else{ //Si la carpeta no esta protegida la servimos
 						
-						if(web.exists() && (getMime(path).equalsIgnoreCase("text/html") || getMime(path).equalsIgnoreCase("text/css"))){
+						if(web.exists() && getExtension(path).equalsIgnoreCase("drkwb")){ //Archivos protegidos
+				        	writer = new PrintWriter(s.getOutputStream(),true);
+				        	
+				        	String webPlano = readFileAsString(errorDirectory + "403.html");
+							String headerResp = makeHeader(403,webPlano.length(),"text/html");
+			
+							System.out.println(headerResp + webPlano);
+							writer.println(headerResp + webPlano);
+				        	
+				        }else if(web.exists() && (getMime(path).equalsIgnoreCase("text/html") || getMime(path).equalsIgnoreCase("text/css"))){
 							/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB EXISTE---*/
 							writer = new PrintWriter(s.getOutputStream(),true);
 							
@@ -171,6 +180,7 @@ public class ClienteThread extends Thread {
 					}
 					break;
 				case 2: // El metodo es POST
+					
 					break;
 				default:
 					break;
@@ -269,7 +279,7 @@ public class ClienteThread extends Thread {
 			return "text/css";
 		}
 		
-		return "no-mime";
+		return "text/plain"; //Si no encontramos el tipo mime lo mandamos como texto plano
 	}
 
 	//Metodo encargado de contruir Strings de cabeceras bien formadas
@@ -279,13 +289,6 @@ public class ClienteThread extends Thread {
 		switch (status) {
 		case 200:
 				header = "HTTP/1.1 " + status + " OK\n";
-				header += "Server:	HTTPJava SERVER DRKWB\n";
-				header += "Content-Type: " + mime + "\n";
-				header += "Content-Length: " + length + "\n";
-				header += "\n";
-				return header;
-		case 404:
-				header = "HTTP/1.1 " + status + " Not Found\n";
 				header += "Server:	HTTPJava SERVER DRKWB\n";
 				header += "Content-Type: " + mime + "\n";
 				header += "Content-Length: " + length + "\n";
@@ -302,6 +305,20 @@ public class ClienteThread extends Thread {
 				header = "HTTP/1.1 " + status + "  Unauthorized\n";
 				header += "Server:	HTTPJava SERVER DRKWB\n";
 				header += "WWW-Authenticate: Basic realm=\"" + protect.getAuthMessage() + "\"\n";
+				header += "Content-Type: " + mime + "\n";
+				header += "Content-Length: " + length + "\n";
+				header += "\n";
+				return header;
+		case 403:
+				header = "HTTP/1.1 " + status + "  Forbidden\n";
+				header += "Server:	HTTPJava SERVER DRKWB\n";
+				header += "Content-Type: " + mime + "\n";
+				header += "Content-Length: " + length + "\n";
+				header += "\n";
+				return header;
+		case 404:
+				header = "HTTP/1.1 " + status + " Not Found\n";
+				header += "Server:	HTTPJava SERVER DRKWB\n";
 				header += "Content-Type: " + mime + "\n";
 				header += "Content-Length: " + length + "\n";
 				header += "\n";
@@ -360,7 +377,7 @@ public class ClienteThread extends Thread {
 	 private boolean envioAuth(ArrayList<String> cabecera) {
 			for(int i = 0;i<cabecera.size();i++){
 				if(cabecera.get(i).startsWith("Authorization: Basic")){
-					return true; //Si contiene esa linea de cabecera, el cliente manda auth
+					return true; //Si contiene esa linea de cabecera, el cliente manda credenciales
 				}
 			}
 			return false;

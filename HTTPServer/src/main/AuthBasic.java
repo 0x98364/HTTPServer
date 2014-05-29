@@ -14,7 +14,6 @@ import crypto.Base64;
  */
 
 public class AuthBasic {
-	private String user,pass;
 	private String authMessage = "Autorizacion GUAY";
 
 	public String getAuthMessage() {
