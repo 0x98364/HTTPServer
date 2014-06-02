@@ -1,0 +1,33 @@
+[Mon Jun 02 17:24:54 CEST 2014] Server ERROR on bind 8040
+[Mon Jun 02 17:25:00 CEST 2014] Server initialized on port 8040
+[Mon Jun 02 17:29:12 CEST 2014] Server initialized on port 8040
+[Mon Jun 02 17:29:18 CEST 2014] GET public_html//protected/index.html from /127.0.0.1
+[Mon Jun 02 17:29:21 CEST 2014] GET public_html//protected2/index.html from /127.0.0.1
+[Mon Jun 02 17:29:52 CEST 2014] GET public_html//protected2/index.html from /127.0.0.1
+[Mon Jun 02 17:30:27 CEST 2014] GET public_html//protected2/index.html from /127.0.0.1
+[Mon Jun 02 17:30:27 CEST 2014] Fail to Auth to public_html\protected2\index.html from /127.0.0.1
+[Mon Jun 02 17:30:32 CEST 2014] GET public_html//protected2/index.html from /127.0.0.1
+[Mon Jun 02 17:30:32 CEST 2014] Fail to Auth to public_html\protected2\index.html from /127.0.0.1
+[Mon Jun 02 17:30:35 CEST 2014] GET public_html//protected2/index.html from /127.0.0.1
+[Mon Jun 02 17:33:18 CEST 2014] GET public_html//protected2/index.html from /127.0.0.1
+[Mon Jun 02 17:33:48 CEST 2014] GET public_html///index.html from /127.0.0.1
+[Mon Jun 02 17:33:48 CEST 2014] GET public_html//css/test.css from /127.0.0.1
+[Mon Jun 02 17:33:48 CEST 2014] GET public_html//img.png from /127.0.0.1
+[Mon Jun 02 17:33:49 CEST 2014] GET public_html//favicon.ico from /127.0.0.1
+[Mon Jun 02 17:33:49 CEST 2014] GET public_html//favicon.ico from /127.0.0.1
+[Mon Jun 02 17:34:19 CEST 2014] GET public_html//protected2/index.html from /127.0.0.1
+[Mon Jun 02 17:34:22 CEST 2014] GET public_html//protected2/index.html from /127.0.0.1
+[Mon Jun 02 17:34:22 CEST 2014] Fail to Auth to public_html\protected2\index.html from /127.0.0.1
+[Mon Jun 02 17:34:35 CEST 2014] GET public_html//protected/index.html from /127.0.0.1
+[Mon Jun 02 17:34:38 CEST 2014] GET public_html//protected/index.html from /127.0.0.1
+[Mon Jun 02 17:34:38 CEST 2014] Fail to Auth to public_html\protected\index.html from /127.0.0.1
+[Mon Jun 02 17:35:02 CEST 2014] GET public_html//protected2/index.html from /127.0.0.1
+[Mon Jun 02 17:35:05 CEST 2014] GET public_html//protected2/index.html from /127.0.0.1
+[Mon Jun 02 17:41:22 CEST 2014] Server initialized on port 8040
+[Mon Jun 02 17:41:27 CEST 2014] GET public_html///index.html from /127.0.0.1
+[Mon Jun 02 17:41:27 CEST 2014] GET public_html//css/test.css from /127.0.0.1
+[Mon Jun 02 17:41:27 CEST 2014] GET public_html//img.png from /127.0.0.1
+[Mon Jun 02 17:42:25 CEST 2014] Server initialized on port 8040
+[Mon Jun 02 17:42:34 CEST 2014] GET public_html///index.html from /127.0.0.1
+[Mon Jun 02 17:42:34 CEST 2014] GET public_html//css/test.css from /127.0.0.1
+[Mon Jun 02 17:42:34 CEST 2014] GET public_html//img.png from /127.0.0.1

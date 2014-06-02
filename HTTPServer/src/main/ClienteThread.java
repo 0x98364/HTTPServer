@@ -12,14 +12,13 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.lang.*;
 
 public class ClienteThread extends Thread {
 	private Socket s;
 	private ArrayList<String> cabeceraEntrante;
 	private String rootDirectory = "public_html/";
 	private String errorDirectory = "errors/";
-	private String logsDirectory = "errors/";
+	private String logsDirectory = "logs/";
 	private String[] methods = {"HEAD","GET","POST","PUT","DELETE","TRACE","OPTIONS","CONNECT"};
 	private ServerLog log;
 	
@@ -48,8 +47,8 @@ public class ClienteThread extends Thread {
 			reader = new BufferedReader(
 					new InputStreamReader(s.getInputStream()));
 			
-			
 			String msgCliente;
+			
 			
 			//Se crea el try para controlar los errores de cabeceras null
 			try{
@@ -90,11 +89,14 @@ public class ClienteThread extends Thread {
 						web = new File(path);
 					}
 					
+					log.saveMsg("GET " + path + " from " + s.getInetAddress());//Guardamos evento en el log
+					writer = new PrintWriter(s.getOutputStream(),true); //Buffer de salida de texto plano
+					DataOutputStream out = new DataOutputStream(s.getOutputStream()); //Buffer salida binarios
+					
 					/*---PROTECCION BASIC DE DIRECTORIOS---*/
 					if((protect.isProtected(carp) || protect.isProtected(new File(web.getParent()))) 
 							&& !envioAuth(cabeceraEntrante) && !(getExtension(path).equalsIgnoreCase("drkwb"))){
-						writer = new PrintWriter(s.getOutputStream(),true);
-						
+
 						String webPlano = readFileAsString(errorDirectory + "401.html");
 						String headerResp = makeHeader(401,webPlano.length(),"text/html"); //Construimos cabecera para web
 						
@@ -105,16 +107,12 @@ public class ClienteThread extends Thread {
 							&& envioAuth(cabeceraEntrante) && !(getExtension(path).equalsIgnoreCase("drkwb"))){
 						//Comprobamos credenciales
 						if(protect.comprobarCredenciales(cabeceraEntrante,web)){
-							writer = new PrintWriter(s.getOutputStream(),true);
-							
 							String webPlano = readFileAsString(path); //Pasamos el file a String
 							String headerResp = makeHeader(200,webPlano.length(),getMime(path)); //Construimos cabecera para web
 							
 							System.out.println(headerResp + webPlano);
 							writer.println(headerResp + webPlano);
 						}else{ //Si las credenciales son erroneas, mandamos header 401 de nuevo
-							writer = new PrintWriter(s.getOutputStream(),true);
-							
 							String webPlano = readFileAsString(errorDirectory + "401.html"); //Pasamos el file a String
 							String headerResp = makeHeader(401,webPlano.length(),"text/html"); //Construimos cabecera para web
 							
@@ -122,13 +120,12 @@ public class ClienteThread extends Thread {
 							writer.println(headerResp + webPlano);
 							
 							System.err.println("Autenticacion erronea a " + web.getPath() + " desde " + s.getInetAddress());
+							log.saveMsg("Fail to Auth to " + web.getPath() + " from " + s.getInetAddress());
 						}
 						
 					}else{ //Si la carpeta no esta protegida la servimos
 						
 						if(web.exists() && getExtension(path).equalsIgnoreCase("drkwb")){ //Archivos protegidos
-				        	writer = new PrintWriter(s.getOutputStream(),true);
-				        	
 				        	String webPlano = readFileAsString(errorDirectory + "403.html");
 							String headerResp = makeHeader(403,webPlano.length(),"text/html");
 			
@@ -137,8 +134,6 @@ public class ClienteThread extends Thread {
 				        	
 				        }else if(web.exists() && (getMime(path).equalsIgnoreCase("text/html") || getMime(path).equalsIgnoreCase("text/css"))){
 							/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB EXISTE---*/
-							writer = new PrintWriter(s.getOutputStream(),true);
-							
 							String webPlano = readFileAsString(path); //Pasamos el file a String
 							String headerResp = makeHeader(200,webPlano.length(),getMime(path)); //Construimos cabecera para web
 							
@@ -148,9 +143,8 @@ public class ClienteThread extends Thread {
 								|| getMime(path).equalsIgnoreCase("text/plain") || getMime(path).equalsIgnoreCase("image/bmp") || getMime(path).equalsIgnoreCase("image/gif") || getMime(path).equalsIgnoreCase("application/zip")
 								|| getMime(path).equalsIgnoreCase("application/x-compressed") || getMime(path).equalsIgnoreCase("application/octet-stream") || getMime(path).equalsIgnoreCase("audio/mpeg3"))){
 							
-							/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA IMAGEN EXISTE---*/
-							DataOutputStream out = new DataOutputStream(s.getOutputStream());
-							
+							/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI el BINARIO EXISTE---*/
+
 							out.writeBytes(makeHeader(200, (int) web.length(), getMime(path)));
 							out.flush();
 							
@@ -169,8 +163,6 @@ public class ClienteThread extends Thread {
 				            bis.close();
 				        }else if(!web.exists()){
 				        	/*---GESTIONAMOS LA RESPUESTA DEL SERVIDOR SI LA WEB NO EXISTE---*/
-				        	writer = new PrintWriter(s.getOutputStream(),true);
-				        	
 				        	String webPlano = readFileAsString(errorDirectory + "404.html");
 							String headerResp = makeHeader(404,webPlano.length(),"text/html");
 			
@@ -187,19 +179,19 @@ public class ClienteThread extends Thread {
 				}
 			}else{
 				writer = new PrintWriter(s.getOutputStream(),true);
-	        	
 	        	String webPlano = readFileAsString(errorDirectory + "400.html");
 				String headerResp = makeHeader(400,webPlano.length(),"text/html");
 
 				writer.println(headerResp + webPlano);
+				
+				log.saveMsg("Malformed header from " + s.getInetAddress());//Cabecera mal formada
 			}
 			
 		} catch (IOException e) {
 			//En caso de error al gestionar la peticion, se envia un codigo HTTP 500
 			System.err.println("Se ha recibido una cabecera vacia desde: " + s.getRemoteSocketAddress());
+			log.saveMsg("Empty header from " + s.getInetAddress());
 			try{
-				writer = new PrintWriter(s.getOutputStream(),true);
-				
 	        	String webPlano = readFileAsString(errorDirectory + "500.html");
 				String headerResp = makeHeader(500,webPlano.length(),"text/html");
 	
@@ -222,6 +214,7 @@ public class ClienteThread extends Thread {
 				}
 			} catch (IOException e) {
 				System.err.println("Error al cerrar sockets");
+				log.saveMsg("Internal socket error");
 			}
 		}
 	}
@@ -240,6 +233,7 @@ public class ClienteThread extends Thread {
 			return false;
 		}catch(IndexOutOfBoundsException e){
 			System.err.println("Imposible verificar cabecera, probablemente vacía");
+			log.saveMsg("Impossible to verify header");
 		}
 		return false;
 		
@@ -284,57 +278,39 @@ public class ClienteThread extends Thread {
 
 	//Metodo encargado de contruir Strings de cabeceras bien formadas
 	private String makeHeader(int status,int length,String mime) {
-		String header;
+		String header = null;
 		
 		switch (status) {
 		case 200:
 				header = "HTTP/1.1 " + status + " OK\n";
-				header += "Server:	HTTPJava SERVER DRKWB\n";
-				header += "Content-Type: " + mime + "\n";
-				header += "Content-Length: " + length + "\n";
-				header += "\n";
-				return header;
+				break;
 		case 400:
 				header = "HTTP/1.1 " + status + "  Bad Request\n";
-				header += "Server:	HTTPJava SERVER DRKWB\n";
-				header += "Content-Type: " + mime + "\n";
-				header += "Content-Length: " + length + "\n";
-				header += "\n";
-				return header;
+				break;
 		case 401:
 				header = "HTTP/1.1 " + status + "  Unauthorized\n";
-				header += "Server:	HTTPJava SERVER DRKWB\n";
 				header += "WWW-Authenticate: Basic realm=\"" + protect.getAuthMessage() + "\"\n";
-				header += "Content-Type: " + mime + "\n";
-				header += "Content-Length: " + length + "\n";
-				header += "\n";
-				return header;
+				break;
 		case 403:
 				header = "HTTP/1.1 " + status + "  Forbidden\n";
-				header += "Server:	HTTPJava SERVER DRKWB\n";
-				header += "Content-Type: " + mime + "\n";
-				header += "Content-Length: " + length + "\n";
-				header += "\n";
-				return header;
+				break;
 		case 404:
 				header = "HTTP/1.1 " + status + " Not Found\n";
-				header += "Server:	HTTPJava SERVER DRKWB\n";
-				header += "Content-Type: " + mime + "\n";
-				header += "Content-Length: " + length + "\n";
-				header += "\n";
-				return header;
+				break;
 		case 500:
 				header = "HTTP/1.1 " + status + " Internal Server Error\n";
-				header += "Server:	HTTPJava SERVER DRKWB\n";
-				header += "Content-Type: " + mime + "\n";
-				header += "Content-Length: " + length + "\n";
-				header += "\n";
-				return header;
+				break;
 		default:
-			
+			//Nunca llegaremos aqui
 			break;
 		}
-		return null;
+		
+		//Parte comun a todas las cabeceras
+		header += "Server:	HTTPJava SERVER DRKWB\n";
+		header += "Content-Type: " + mime + "\n";
+		header += "Content-Length: " + length + "\n";
+		header += "\n";
+		return header;
 		
 	}
 	

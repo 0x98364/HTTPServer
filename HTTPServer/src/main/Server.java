@@ -14,9 +14,11 @@ public class Server {
 	public static int STANDART_PORT=8040;
 	private int stackSize;
 	private boolean stop;
+	private ServerLog log;
 	
 	public void startup(){
 		ServerSocket srv = null;
+		log = new ServerLog("logs/");
 		
 		if(port==-1){
 			port=STANDART_PORT;
@@ -27,6 +29,7 @@ public class Server {
 			System.err.println("Registrando puerto " + port + ".....");
 			srv = new ServerSocket(port,stackSize);
 			System.err.println("Puerto registrado " + port);
+			log.saveMsg("Server initialized on port " + port);
 			
 			/*---ADMINISTRAR CONEXIONES ENTRANTES--*/
 			try {
@@ -43,14 +46,17 @@ public class Server {
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+				log.saveMsg("Server ERROR on listening clients");
 			}
 			
 		}catch(BindException e){
 			System.err.println("Ese puerto ya esta en uso!");
+			log.saveMsg("Server ERROR on bind " + port);
 		}
 		catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			log.saveMsg("Server initialization ERROR");
 		}
 	}
 	public static void main(String[] args) {
