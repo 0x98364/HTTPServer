@@ -5,8 +5,11 @@ import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import GUI.Window;
+
 
 public class Server {
+	private Window w = new Window();
 	private int port=-1;
 	public static int STANDART_PORT=8040;
 	private int stackSize;
@@ -52,10 +55,8 @@ public class Server {
 	}
 	public static void main(String[] args) {
 		Server srv = new Server();
-		
+		srv.w.setVisible(true);
 		srv.startup();
-		
-
 	}
 
 }
