@@ -4,7 +4,11 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+
 import javax.swing.*;
+import javax.swing.text.Caret;
+
+
 
 
 
@@ -12,18 +16,31 @@ import javax.swing.*;
 
 
 public class Window extends JFrame {
-	JPanel contenedor;
-	JButton on, off, restart, exit;
-	JTextArea book; 
-	JMenuBar barraMenu;
-	JMenu colores,fuentes;
-	JMenuItem rojo,verde,azul,negrita,cursiva,normal,salir;
-	
+	public JPanel contenedor;
+	public JButton on, off, restart, exit;
+	public JTextField user;
+	public JPasswordField pass;
+	public JLabel us, ps;
+	public JTextArea book; 
+	public JMenuBar barraMenu;
+	public JMenu archivo,fuentes;
+	public JMenuItem blanco,azul,salir;
+
 	public Window(){
 		
 		setTitle("SERVER");
 		setBounds(0, 0, 500, 350);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
+		
+		/*Login*/
+		user=new JTextField();
+		user.setBounds(85, 10, 80, 20);
+		us=new JLabel("Usuario:");
+		us.setBounds(25, 10, 50, 20);
+		pass=new JPasswordField("contraseña");
+		pass.setBounds(250, 10, 80, 20);
+		ps=new JLabel("Contraseña");
+		ps.setBounds(175, 10, 80, 20);
 		
 		/*Botones*/
 		on=new JButton("Start");
@@ -38,36 +55,23 @@ public class Window extends JFrame {
 		/*Área de texto*/
 		book=new JTextArea(20,20);
 		book.setBounds(30, 50, 330, 190);
-		
-		
+		book.setBackground(Color.gray);
+		book.setCaretColor(Color.white);
 			
 		/*Menús*/
 			barraMenu=new JMenuBar();
-			colores=new JMenu("Colores");
-			barraMenu.add(colores);
-			rojo=new JMenuItem("Rojo");
-			colores.add(rojo);
-			verde=new JMenuItem("Verde");
-			colores.add(verde);
-			azul=new JMenuItem("Azul");
-			colores.add(azul);
+			archivo=new JMenu("Archivo");
+			barraMenu.add(archivo);
+						
+			archivo.add(new JSeparator());
 			
-			colores.add(new JSeparator());
-			
-			fuentes=new JMenu("Fuentes");
-			colores.add(fuentes);
-			
-			negrita=new JMenuItem("Negrita");
-			fuentes.add(negrita);
-			cursiva=new JMenuItem("Cursiva");
-			fuentes.add(cursiva);
-			normal=new JMenuItem("Normal");
-			fuentes.add(normal);
+			fuentes=new JMenu("Color de fuentes");
+			archivo.add(fuentes);
 			
 			
-			colores.add(new JSeparator());
+			archivo.add(new JSeparator());
 			salir=new JMenuItem("Salir");
-			colores.add(salir);
+			archivo.add(salir);
 			
 			/*Contenedor*/
 			contenedor=new JPanel();
@@ -80,57 +84,12 @@ public class Window extends JFrame {
 				contenedor.add(restart);
 				contenedor.add(exit);
 				contenedor.add(book);
-			
-			accion a=new accion();
-			
-			salir.addActionListener(a);
-			exit.addActionListener(a);
-			rojo.addActionListener(a);
-			verde.addActionListener(a);
-			azul.addActionListener(a);
-			negrita.addActionListener(a);
-			normal.addActionListener(a);		
-			cursiva.addActionListener(a);
-			
-			
-		}
+				contenedor.add(user);
+				contenedor.add(pass);
+				contenedor.add(us);
+				contenedor.add(ps);
+				
 		
-		public class accion implements ActionListener{
-
-			
-			public void actionPerformed(ActionEvent arg0) {
-				
-				if(arg0.getSource()==salir || arg0.getSource()==exit){
-					System.exit(0);
-				}
-				
-				if(arg0.getSource()==rojo){
-					contenedor.setBackground(Color.red);
-					
-				}
-				if(arg0.getSource()==verde){
-					contenedor.setBackground(Color.green);
-					
-				}
-				if(arg0.getSource()==azul){
-					contenedor.setBackground(Color.blue);
-					
-				}
-				
-				if(arg0.getSource()==cursiva){
-					Font f=new Font("Arial",Font.ITALIC,12);
-					
-				}
-				if(arg0.getSource()==negrita){
-					Font f=new Font("Arial",Font.BOLD,12);
-					
-				}
-				if(arg0.getSource()==normal){
-					Font f=new Font("Arial",Font.PLAIN,12);
-					
-				}
-			}
-			
-		}	
+		}
 }
 

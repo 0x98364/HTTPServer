@@ -1,12 +1,15 @@
 package main;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import GUI.Window;
+import javax.swing.JOptionPane;
 
+import GUI.Window;
 
 public class Server {
 	private Window w = new Window();
@@ -14,11 +17,31 @@ public class Server {
 	public static int STANDART_PORT=8040;
 	private int stackSize;
 	private boolean stop;
-	private ServerLog log;
+	public static ServerSocket srv = null;
+	ListenerThread lt;
 	
+	public Server(){
+	eventos e=new eventos();
+	w.salir.addActionListener(e);
+	w.exit.addActionListener(e);
+	
+	/*Eventos*/
+	
+	w.on.addActionListener(e);
+	w.off.addActionListener(e);
+	w.restart.addActionListener(e);
+	w.exit.addActionListener(e);
+	}
+	public boolean isStop() {
+		return stop;
+	}
+
+	public void setStop(boolean stop) {
+		this.stop = stop;
+	}
+
 	public void startup(){
-		ServerSocket srv = null;
-		log = new ServerLog("logs/");
+		
 		
 		if(port==-1){
 			port=STANDART_PORT;
@@ -29,40 +52,52 @@ public class Server {
 			System.err.println("Registrando puerto " + port + ".....");
 			srv = new ServerSocket(port,stackSize);
 			System.err.println("Puerto registrado " + port);
-			log.saveMsg("Server initialized on port " + port);
 			
-			/*---ADMINISTRAR CONEXIONES ENTRANTES--*/
-			try {
-				while(!stop){
-					System.out.println("Esperando conexiones entrantes...");
-					Socket s = srv.accept();
-					System.out.println("Conexion entrande desde " + s.getInetAddress());
-					
-					/*---ATENDER CONEXION ENTRANTE EN OTRO HILO---*/
-					
-					ClienteThread st = new ClienteThread(s);
-					st.start();
-				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				log.saveMsg("Server ERROR on listening clients");
-			}
+			/*---INICIMAOS EL HILO ESCUCHADOR DE CONEXIONES--*/
+			lt = new ListenerThread();
+			lt.start();
 			
 		}catch(BindException e){
 			System.err.println("Ese puerto ya esta en uso!");
-			log.saveMsg("Server ERROR on bind " + port);
 		}
 		catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			log.saveMsg("Server initialization ERROR");
 		}
+
 	}
+			
+	public class eventos implements ActionListener{
+
+		
+		public void actionPerformed(ActionEvent e) {
+			
+			if(e.getSource()==w.salir || e.getSource()==w.exit){
+				System.exit(0);
+			}	if(e.getSource()==w.on){
+				startup();
+			}
+			else if(e.getSource()==w.off){
+				lt.stop();
+			}
+			else if(e.getSource()==w.restart){
+				startup();
+			}
+			else if(e.getSource()==w.exit){
+				int valor=JOptionPane.showConfirmDialog(w.contenedor, "Are you sure to want to quit?"
+						, "Exit Confirmation", JOptionPane.YES_NO_CANCEL_OPTION);
+				if (valor==JOptionPane.YES_OPTION) {System.exit(1);}
+				if (valor==JOptionPane.NO_OPTION) {System.exit(0);}
+			}
+		}
+		
+	}
+		
 	public static void main(String[] args) {
+		
 		Server srv = new Server();
 		srv.w.setVisible(true);
-		srv.startup();
-	}
+		
+		}
 
-}
+	}
