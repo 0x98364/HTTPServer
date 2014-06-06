@@ -23,14 +23,12 @@ public class Server {
 	public Server(){
 	eventos e=new eventos();
 	w.salir.addActionListener(e);
-	w.exit.addActionListener(e);
 	
 	/*Eventos*/
 	
 	w.on.addActionListener(e);
 	w.off.addActionListener(e);
 	w.restart.addActionListener(e);
-	w.exit.addActionListener(e);
 	}
 	public boolean isStop() {
 		return stop;
