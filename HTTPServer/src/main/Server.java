@@ -109,10 +109,7 @@ public class Server {
 			if(m.getSource()==w.mostrar){
 				try {
 		            Runtime obj = Runtime.getRuntime();
-		            //La instrucción es notepad para abrir el bloc de notas, espacio
-		            //y la ruta donde esta el archivo
 		            obj.exec("notepad "+logsDirectory+"events.log");
-		            //Pueden usar System.getProperty("user.dir") Obtiene la ruta del proyecto
 		        } catch (IOException ex) {
 		             System.out.println("IOException "+ex.getMessage());
 		        }
